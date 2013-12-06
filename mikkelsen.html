@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mikkelsen 2.0 - Ghettosimulator 2015</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF8">
+</head>
+
+<body>
+    <div>
+        <canvas id="cSeb" width="1800" height="1220">
+            <p>Smask</p>
+        </canvas>
+    </div>
+
+<script>
+//   ______   _______           _______ _________ _______  _______ 
+//  (  ___ \ (  ____ \|\     /|(  ____ \\__   __/(  ____ \(  ____ )
+//  | (   ) )| (    \/| )   ( || (    \/   ) (   | (    \/| (    )|
+//  | (__/ / | (__    | |   | || (_____    | |   | (__    | (____)|
+//  |  __ (  |  __)   ( (   ) )(_____  )   | |   |  __)   |     __)
+//  | (  \ \ | (       \ \_/ /       ) |   | |   | (      | (\ (   
+//  | )___) )| (____/\  \   /  /\____) |   | |   | (____/\| ) \ \__
+//  |/ \___/ (_______/   \_/   \_______)   )_(   (_______/|/   \__/
+//  Sebtasme (C) 2013
+
+//<h2>Jeg savner sommeren s&#229; j&#230;vlig</h2>
+
+
+var canv;
+var gfx;
+var refreshRate = 1000 / 60;
+
+var color = "#FFFFFF";
+var step =  Math.floor((Math.random()*250));
+var up = true;
+var timeSinceCol = new Date().getTime();
+var logText = "Sebtasme (c) 2013";
+
+var Gays = new Array();
+var antallGays = Math.floor((Math.random()*40)) + 1;
+
+    // Felles-objekt-verdier
+    var antallGutter = 8;
+    var lifeLength = 280;
+    var navn = new Array('Henrik', 'Mikkel', 'Saebs', 'Erik', 'Tesla', 'Kenneth', 'Mikkelsen', 'Eirik', 'Helgerud', 'Snoop_Dogg', 'Ulrik', 'Kristian', 'Putin', 'Stalin', 'Stëk', 'Helgiz', 'Fakerabona', 'Einstein', 'Kake', 'Cissé', 'Kong_Harald', 'Norris', 'Bollerud', 'Einar', 'Polly', 'Mywand', 'Chutulu', 'Dice', 'Balder', 'Linus', 'Kokos', 'Tarzan', 'Lea', 'Pondus', 'Che_Guevara', 'Joseph', 'Rex', 'Garry', 'Dominikas', 'Swagani', 'Chen', 'Kasper', 'Joon');
+
+// Stats
+var deaths = 0;
+var births = 0;
+
+function Mikkelsen()
+{
+    canv = document.getElementById('cSeb');
+    gfx = canv.getContext("2d");
+    console.info('[Mikkelsen] Started');
+    init();
+}
+
+function init()
+{
+    console.info('[Mikkelsen] Initialised');
+    console.info('[Mikkelsen] Domain: ' + window.location.hostname);
+    console.info('[Mikkelsen] Dim: ( ' + canv.width + ', ' + canv.height +  ' )' );
+    canv.height = window.innerHeight;
+    canv.width = window.innerWidth;
+    console.info('[Mikkelsen] Dim: ( ' + canv.width + ', ' + canv.height +  ' )' );
+
+    for(var i = 0; i < antallGays; i++)
+    {
+        Gays[i] = new Gutt('');
+    };
+    setInterval(update, refreshRate);
+}
+
+function update()
+{
+    logic();
+    render();
+}
+
+
+function logic()
+{
+   for(var i = 0; i < Gays.length; i++)
+    {
+        if(Gays[i])
+        {
+            Gays[i].move(Gays[i]);
+            Gays[i].event(Gays[i]);
+            Gays[i].checkDeath(Gays[i], Gays, i);
+        }else{   //console.log(i + ' is dead.');
+        }
+    };
+
+    if((new Date().getTime()) - timeSinceCol > 800)
+    {
+        if(up && step < 300)
+        {
+            step = step + 1;
+        }else if(step >= 300)
+        {
+            up = false;
+            step = step - 1;
+        }else if(!up && step > 0)
+        {
+            step = step - 1;
+        }else if( !up && step <= 0)
+        {
+            up = true;
+            step = step + 1;
+        }
+        timeSinceCol = new Date().getTime();
+    }    
+
+    color = rainbow(300, step);
+}
+
+function render()
+{
+    clearCanvas();
+    gfx.fillStyle = color;
+    gfx.fillRect(0, 0, canv.width, canv.height);
+    document.bgColor = color;
+    
+    // Kul fremhevet skrift
+    gfx.font = "bold 30px sans-serif";
+    gfx.fillStyle = 'white';
+    gfx.fillText(logText, 0, canv.height - 5);
+    gfx.strokeStyle = 'black';
+    gfx.lineWidth = 2;
+    gfx.strokeText(logText, 0, canv.height - 5);
+
+   for(var i = 0; i < Gays.length; i++)
+    {
+        if(Gays[i])
+        {
+            Gays[i].draw(Gays[i]);
+        }else{
+           // console.log(i + ' is dead.');
+        }
+    };
+
+}
+
+
+// Det mannligste objektet
+
+function Gutt(src)
+{
+    // Personlige verdier
+    this.name = navn[Math.floor((Math.random()*navn.length))];
+    this.lifetime = Math.floor((Math.random()*lifeLength)) + 5;
+    this.speed = Math.floor((Math.random()*10)) + 1;
+    this.growSpeed = Math.floor((Math.random()*3));
+    this.eventtime = Math.floor((Math.random()*3000)) + 1000;
+
+    this.fruktbarhet = Math.floor((Math.random()*100));
+
+
+    this.w = 40;
+    this.h = this.w + 20;
+
+    this.stopAmount = 1000;
+    this.timeStop = new Date().getTime();
+    this.stop = false;
+
+    // Tekniske detaljer LAWL
+    if(src)
+    {
+        this.src = src;
+    }else{
+        this.src = 'gutta/' + (Math.floor((Math.random()*antallGutter)) + 1) + '_gutt.png';
+    }
+    this.x = Math.floor((Math.random()*canv.width));
+    this.y = Math.floor((Math.random()*canv.height));
+    this.timeEvent = (new Date().getTime());
+    this.timeLife = (new Date().getTime());
+
+
+   
+    this.dX = Math.floor((Math.random()*canv.width));
+    this.dY = Math.floor((Math.random()*canv.height));
+
+    this.imageLoaded = false;
+
+    //Movement
+    this.movingDest = false;
+    this.movingCircle = false;
+
+    this.img = new Image();
+    this.img.src = this.src;
+    this.img.onload = function() // LOOLOLOLOLO BRUKER IKKE FUKHmtl :IJFFI))))9
+    {
+        imageLoaded = true;
+    }
+}
+
+Gutt.prototype.draw = function(obj)
+{
+    //console.log(obj.imageLoaded);
+    if(obj != null)
+    {
+        gfx.drawImage(obj.img, obj.x, obj.y, obj.w, obj.h);
+
+        if( obj.w <= 80 || obj.w >= 200)
+        {
+            var x = 15;
+            if(obj.w > 120){x = 22}
+
+             // Kul fremhevet skrift
+            gfx.font = "bold " + x + "px sans-serif";
+            gfx.fillStyle = 'white';
+            gfx.fillText(obj.name, obj.x, obj.y + obj.h);
+            gfx.strokeStyle = 'black';
+            gfx.lineWidth = 1;
+            gfx.strokeText(obj.name, obj.x, obj.y + obj.h);
+        }
+           
+       
+    }
+    
+}
+
+Gutt.prototype.event = function(obj)
+{
+    if((new Date().getTime()) - obj.timeEvent > obj.eventtime)
+    {
+        obj.w = obj.w + obj.growSpeed;
+        obj.h = obj.h + obj.growSpeed;
+
+        if(Math.floor((Math.random()*10)) == 3)
+        {
+            obj.speed = Math.floor((Math.random()*10)) + 1;
+        }
+
+        if(Math.floor((Math.random()*obj.fruktbarhet)) == Math.floor((Math.random()*obj.fruktbarhet)) )
+        {
+            obj.stopMovement(obj, Math.floor((Math.random()*3000)) + 1000);
+            obj.giveBirth(obj, Gays);
+        }
+
+        obj.timeEvent = (new Date().getTime());
+    }
+    
+    if((new Date().getTime()) - obj.timeLife > 1000)
+    {
+        obj.lifetime = obj.lifetime - 1;
+        obj.timeLife = (new Date().getTime());
+    }
+    
+}
+
+Gutt.prototype.checkDeath = function(obj, array, index)
+{
+    if(obj.lifetime <= 0)
+    {
+        console.log(obj.name + ' dode');
+        log(obj.name + ' døde');
+        array[index] = undefined;
+        deaths = deaths + 1;
+    }
+}
+
+Gutt.prototype.kill = function(obj)
+{
+    if(obj.lifetime >= 0)
+    {
+        obj.lifetime = 0;
+    }
+}
+
+Gutt.prototype.giveBirth = function(obj, array)
+{
+    if(obj.w >= 55)
+    {
+
+      var b = new Gutt(obj.src);
+        b.x = obj.x;
+        b.y = obj.y;
+    
+        var rec = false;
+    
+        for(var i = 0; i < array.length; i++)
+        {
+            if(!array[i])
+            {
+                array[i] = b;
+                rec = true;
+                
+            }
+            if(rec)
+            {
+                break;
+            }
+        }
+    
+        if(!rec)
+        {
+            array.push(b);
+        }
+    
+        births = births + 1;
+        console.log(obj.name + ' gav liv til ' + b.name);
+        log(obj.name + ' gav liv til ' + b.name);
+
+        if(Math.floor((Math.random()*3)) == 2)
+        {
+            console.log(obj.name + ' dode i barselseng');
+            log(obj.name + ' døde i barselseng');
+            obj.kill(obj);
+        }
+        
+        //console.log(array.length + " - Deaths: " + deaths + " Births: " +  births);
+    }else{
+        console.log(obj.name + ' er for ung til aa fode');
+        log(obj.name + ' er for ung til å føde');
+    }
+      
+}
+
+Gutt.prototype.stopMovement = function(obj, amount)
+{
+    obj.stop = true;
+    obj.stopAmount = amount;
+    obj.timeStop = new Date().getTime();
+    obj.speed = 1;
+}
+
+
+Gutt.prototype.move = function(obj)
+{
+
+    if(!obj.stop)
+    {
+
+
+        // console.log(obj.movingDest);
+        if(!obj.movingDest)
+        {
+            obj.dX = Math.floor((Math.random()*canv.width));
+            obj.dY = Math.floor((Math.random()*canv.height));
+            obj.movingDest = true;
+           // console.log('GUTT_DEST: ' + obj.movingDest );
+            //console.log(obj.name + ' ny destinasjon: ' + obj.dX + ', ' + obj.dY );
+
+        }
+        
+        if(obj.movingDest)
+        {
+            //console.log("BEVEGERS SEG");
+            //Horizontal movement
+            if(obj.x > obj.dX)
+            {
+                obj.x = obj.x - obj.speed;
+            }
+            else
+            {
+                obj.x = obj.x + obj.speed;
+            }
+
+            //Vertical movement
+            if(obj.y > obj.dY)
+            {
+                obj.y = obj.y - obj.speed;
+            }
+            else
+            {
+                obj.y = obj.y + obj.speed;
+            }
+            //console.log(Math.sqrt(((obj.x-obj.dX)*(obj.x-obj.dX))));
+            if(Math.sqrt(((obj.x-obj.dX)*(obj.x-obj.dX))) <= 22 && Math.sqrt(((obj.y-obj.dY)*(obj.y-obj.dY))) <= 22)
+            {
+                obj.movingDest = false;
+                //console.log('Naadd maalet: ' + obj.x + '_' + obj.dX + ' | ' +  obj.y + '_' + obj.dY);
+            }
+        }
+    }else{
+        if(new Date().getTime() - obj.timeStop > obj.stopAmount )
+        {
+            obj.stop = false;
+        }
+    }
+}
+
+
+function log(string)
+{
+    logText = string;
+}
+
+function clearCanvas()
+{
+    canv.height = window.innerHeight;
+    canv.width = window.innerWidth;
+}
+
+function rainbow(numOfSteps, step)
+{
+        // based on http://stackoverflow.com/a/7419630
+        // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distiguishable vibrant markers in Google Maps and other apps.
+        // Adam Cole, 2011-Sept-14
+        // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+        var r, g, b;
+        var h = step / numOfSteps;
+        var i = ~~(h * 6);
+        var f = h * 6 - i;
+        var q = 1 - f;
+        switch(i % 6){
+            case 0: r = 1, g = f, b = 0; break;
+            case 1: r = q, g = 1, b = 0; break;
+            case 2: r = 0, g = 1, b = f; break;
+            case 3: r = 0, g = q, b = 1; break;
+            case 4: r = f, g = 0, b = 1; break;
+            case 5: r = 1, g = 0, b = q; break;
+        }
+        var c = "#" + ("00" + (~ ~(r * 235)).toString(16)).slice(-2) + ("00" + (~ ~(g * 235)).toString(16)).slice(-2) + ("00" + (~ ~(b * 235)).toString(16)).slice(-2);
+        return (c);
+}
+
+
+Mikkelsen();
+</script>
+
+</body>
+
+</html>
